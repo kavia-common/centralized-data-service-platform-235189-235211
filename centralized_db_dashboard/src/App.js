@@ -1,48 +1,69 @@
-import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
+import React from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
+import { AuthProvider } from './auth/AuthContext';
+import { ProtectedRoute } from './routes/ProtectedRoute';
+import { AppShell } from './components/AppShell';
+
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { QueryPage } from './pages/QueryPage';
+import { HistoryPage } from './pages/HistoryPage';
+import { SchemaPage } from './pages/SchemaPage';
+import { UsersPage } from './pages/UsersPage';
+import { MetricsPage } from './pages/MetricsPage';
+import { AuditPage } from './pages/AuditPage';
 
 // PUBLIC_INTERFACE
 function App() {
-  const [theme, setTheme] = useState('light');
-
-  // Effect to apply theme to document element
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  // PUBLIC_INTERFACE
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-  };
-
+  /** App entry: router + auth provider + protected layout. */
   return (
-    <div className="App">
-      <header className="App-header">
-        <button 
-          className="theme-toggle" 
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-          {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-        </button>
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <p>
-          Current theme: <strong>{theme}</strong>
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/query" replace />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          {/* Authenticated app */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <AppShell />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/query" element={<QueryPage />} />
+            <Route path="/history" element={<HistoryPage />} />
+
+            {/* Schema management: Admin/Developer */}
+            <Route
+              path="/schema"
+              element={
+                <ProtectedRoute roles={['admin', 'developer']}>
+                  <SchemaPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin only */}
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <UsersPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="/metrics" element={<MetricsPage />} />
+            <Route path="/audit" element={<AuditPage />} />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/query" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
